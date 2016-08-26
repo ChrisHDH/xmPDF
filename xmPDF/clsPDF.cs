@@ -12,89 +12,68 @@ namespace xmPDF
     {
 
         // local variables
-        string[] sObjects = new string[10000];
-
-        // pdf properties
-        public string path { set; get; }
-        public string PdfVersion { set; get; }
+        private FileStream streamIn;
+        BinaryReader br;
         
-        // methods --------------------------------------------------------------------------------
-        public string merge()
+        // properties
+        public string path { set; get; }
+        
+        // pdf Info
+        public string Version { set; get; }
+        public string FileType { set; get; }
+
+
+
+        // constructor
+        public PDF(string filepath)
         {
-            string sRtn = "Valid";
+            path = filepath;
 
-            // Open the stream and read it back. 
-            using (StreamReader sr = File.OpenText(path))
-            {
-                //pdfVersion - first line 
-                PdfVersion = sr.ReadLine();
-                PdfVersion = PdfVersion + " --- " + sr.ReadLine();
-                PdfVersion = PdfVersion.Replace("\r\n", "");
-                PdfVersion = PdfVersion.Replace("%", "");
-                PdfVersion = PdfVersion.Trim();
+            // Open the stream to read
+            streamIn = new FileStream(path, FileMode.Open);
+            br = new BinaryReader(streamIn);
 
-                Console.WriteLine(PdfVersion);
-
-                // read objects
-                string s = "";
-                int iCtn = 0;
-
-                bool sInObjFlag = false;
-                
-                while ((s = sr.ReadLine()) != null) 
-                {
-                    // Get Object ID ==============================================================================================================
-                    if (s.Contains(" obj") && sInObjFlag == false) sInObjFlag = true;
-
-                    if (sInObjFlag == false) Console.WriteLine("-------------------------------------------------------------------------------------");
-                
-                    if (sInObjFlag == true)
-                    {
-                        Console.WriteLine(s);
-                        if (s == "<<")
-                        {
+             // read 
+            Version = readbinaryline(br).ToString();
 
 
-
-
-                            if (s == "Stream")
-                        {
-                            // Parse and merge
-
-
-
-
-
-
-
-
-                            iCtn++;
-                        }
-
-
-
-                    }
-
-                    if (s == "endobj" && sInObjFlag == true) sInObjFlag = false;
-                    // write to new file
-                }
-
-
-                // Write out to new file ================================================================
-
-                Console.ReadKey();
-                //string s = "";
-                //while ((s = sr.ReadLine()) != null)
-                //{
-                //Console.WriteLine(s);
-                //}
-
-            }
-
-            return sRtn;
         }
 
+        
+       
 
+        //--------------------------------------------------------------------------------
+        public byte[] readbinaryline(BinaryReader br)
+        {
+            MemoryStream mstream = new MemoryStream();
+            byte lastbyte = br.ReadByte();
+            try
+            {
+                byte newbyte = br.ReadByte();
+                if (lastbyte == '\r' && newbyte == '\n')
+                {
+                    mstream.Write(new [] { lastbyte }, 0, 1);
+                    return mstream.ToArray();
+                }
+                  
+                mstream.Append(lastbyte);
+                lastbyte = newbyte;
+            }
+            catch (EndOfStreamException)
+            {
+                mstream.Append(lastbyte);
+            }
+            return mstream.ToArray();
+        }
+
+        
+
+
+
+
+
+
+        //--< Method Library >-------------------------------------------------------------------------------------------
         // Converts a string to a MemoryStream.
         static System.IO.MemoryStream StringToMemoryStream(string s)
         {
@@ -119,44 +98,24 @@ namespace xmPDF
             dest.Flush();
         }
 
-
-        // Read line binary ---------------------------------------
-        public class LineReader : IDisposable
-        {
-            private Stream stream;
-            private BinaryReader reader;
-
-            public LineReader(Stream stream) { reader = new BinaryReader(stream); }
-
-            public string ReadLine()
-            {
-                StringBuilder result = new StringBuilder();
-                char lastChar = reader.ReadChar();
-                // an EndOfStreamException here would propogate to the caller
-
-                try
-                {
-                    char newChar = reader.ReadChar();
-                    if (lastChar == '\r' && newChar == '\n')
-                        return result.ToString();
-
-                    result.Append(lastChar);
-                    lastChar = newChar;
-                }
-                catch (EndOfStreamException)
-                {
-                    result.Append(lastChar);
-                    return result.ToString();
-                }
-            }
-
-            public void Dispose()
-            {
-                reader.Close();
-            }
-        }
-        //-----------------------------------------------------------
-
-
+        
     }
+
+    public static class MemoryStreamExtensions
+    {
+        public static void Append(this MemoryStream stream, byte value)
+        {
+            stream.Append(new[] { value });
+        }
+
+        public static void Append(this MemoryStream stream, byte[] values)
+        {
+            stream.Write(values, 0, values.Length);
+        }
+    }
+
+
+
 }
+
+
