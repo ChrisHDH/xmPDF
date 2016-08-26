@@ -17,14 +17,16 @@ namespace xmPDF
         int inPtr = 0;
         int outPtr = 0;
 
-
         // properties
-        
+
         // pdf Info
         public string Version { set; get; }
         public string FileType { set; get; }
 
-
+        public byte[] serObj = { 0x20, 0x6F, 0x62, 0x6A };
+        public byte[] serXref = { 0x78, 0x72, 0x65, 0x66 };
+        public byte[] serStreamStart = { 0x73, 0x74, 0x72, 0x65, 0x61, 0x6D };
+        public byte[] serStreamEnd = { 0x65, 0x6E, 0x64, 0x73, 0x74, 0x72, 0x65, 0x61, 0x6D };
 
         //==< Method Library >====================================================================================
         //--------------------------------------------------------------------------------------------------------
@@ -85,6 +87,38 @@ namespace xmPDF
 
 
 
+        //--------------------------------------------------------------------------------------------------------
+        public int IndexOf(byte[] input, byte[] pattern)
+        {
+            byte firstByte = pattern[0];
+            int index = -1;
+
+            if ((index = Array.IndexOf(input, firstByte)) >= 0)
+            {
+                for (int i = 0; i < pattern.Length; i++)
+                {
+                    if (index + i >= input.Length ||
+                     pattern[i] != input[index + i]) return -1;
+                }
+            }
+
+            return index;
+        }
+
+        public int appendBytesValue(byte[] buffer, byte[] bytes)
+        {
+            int i = buffer.Length;
+            Array.Resize<byte>(ref buffer, i + bytes.Length + 4);
+
+            byte[] lengthBytes = BitConverter.GetBytes(bytes.Length);
+            if (BitConverter.IsLittleEndian)
+                Array.Reverse(lengthBytes);
+
+            lengthBytes.CopyTo(buffer, i);
+            bytes.CopyTo(buffer, i + 4);
+
+            return 0;
+        }
 
 
 
