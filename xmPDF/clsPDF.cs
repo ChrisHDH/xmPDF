@@ -12,11 +12,13 @@ namespace xmPDF
     {
 
         // local variables
-        private FileStream streamIn;
-        BinaryReader br;
-        
+        byte[] inPDF; 
+        byte[] outPDF;
+        int inPtr = 0;
+        int outPtr = 0;
+
+
         // properties
-        public string path { set; get; }
         
         // pdf Info
         public string Version { set; get; }
@@ -24,56 +26,69 @@ namespace xmPDF
 
 
 
-        // constructor
-        public PDF(string filepath)
+        //==< Method Library >====================================================================================
+        //--------------------------------------------------------------------------------------------------------
+        public int LoadPdf(string fileName)
         {
-            path = filepath;
-
-            // Open the stream to read
-            streamIn = new FileStream(path, FileMode.Open);
-            br = new BinaryReader(streamIn);
-
-             // read 
-            Version = readbinaryline(br).ToString();
-
-
+            inPDF = null;
+            using (FileStream fs = new FileStream(fileName, FileMode.Open, FileAccess.Read))
+            {
+                inPDF = new byte[fs.Length];
+                fs.Read(inPDF, 0, (int)fs.Length);
+            }
+            outPDF = new byte[inPDF.Length];
+            return 0;
         }
 
-        
-       
-
-        //--------------------------------------------------------------------------------
-        public byte[] readbinaryline(BinaryReader br)
+        //--------------------------------------------------------------------------------------------------------
+        public byte[] ReadPdfNextline()
         {
             MemoryStream mstream = new MemoryStream();
-            byte lastbyte = br.ReadByte();
-            try
+            byte lastbyte = 0x00;
+            byte newbyte = 0x00;
+            
+            while (inPtr <= inPDF.Length)
             {
-                byte newbyte = br.ReadByte();
-                if (lastbyte == '\r' && newbyte == '\n')
-                {
-                    mstream.Write(new [] { lastbyte }, 0, 1);
-                    return mstream.ToArray();
-                }
-                  
-                mstream.Append(lastbyte);
                 lastbyte = newbyte;
-            }
-            catch (EndOfStreamException)
-            {
-                mstream.Append(lastbyte);
+                newbyte = inPDF[inPtr];
+                mstream.Write(new[] { newbyte }, 0, 1);
+
+                inPtr++;
+
+                if ((newbyte == 0x0a))
+                    break;
             }
             return mstream.ToArray();
         }
 
-        
+        //--------------------------------------------------------------------------------------------------------
+        public int WritePdfline(byte[] PDFLine)
+        {
+            for (int i = 0; i <= PDFLine.Length-1; i++, outPtr++ )
+                outPDF[outPtr] = PDFLine[i];
+            
+            return 0;
+        }
+
+        //--------------------------------------------------------------------------------------------------------
+        public int SaveNewPdf(string fileName)
+        {
+            inPDF = null;
+            using (FileStream fs = new FileStream(fileName, FileMode.Open, FileAccess.Read))
+            {
+                inPDF = new byte[fs.Length];
+                fs.Read(inPDF, 0, (int)fs.Length);
+            }
+            return 0;
+        }
 
 
 
 
 
 
-        //--< Method Library >-------------------------------------------------------------------------------------------
+
+        //--< Unsed Method Library >-------------------------------------------------------------------------------------------
         // Converts a string to a MemoryStream.
         static System.IO.MemoryStream StringToMemoryStream(string s)
         {
@@ -98,22 +113,31 @@ namespace xmPDF
             dest.Flush();
         }
 
-        
-    }
-
-    public static class MemoryStreamExtensions
-    {
-        public static void Append(this MemoryStream stream, byte value)
+        //--------------------------------------------------------------------------------
+        public byte[] readbinaryline(BinaryReader br)
         {
-            stream.Append(new[] { value });
+            MemoryStream mstream = new MemoryStream();
+            byte lastbyte = 0x00;
+            byte newbyte = 0x00;
+
+            if (br.BaseStream.Position == br.BaseStream.Length)
+                return null;
+
+            while (!(br.BaseStream.Position == br.BaseStream.Length))
+            {
+                lastbyte = newbyte;
+                newbyte = br.ReadByte();
+                mstream.Write(new[] { newbyte }, 0, 1);
+
+                if ((newbyte == 0x0a))
+                    break;
+
+            }
+            return mstream.ToArray();
+
         }
 
-        public static void Append(this MemoryStream stream, byte[] values)
-        {
-            stream.Write(values, 0, values.Length);
-        }
     }
-
 
 
 }
