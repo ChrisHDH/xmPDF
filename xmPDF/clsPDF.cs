@@ -105,19 +105,13 @@ namespace xmPDF
             return index;
         }
 
-        public int appendBytesValue(byte[] buffer, byte[] bytes)
+
+        public byte[] AppendTwoByteArrays(byte[] arrayA, byte[] arrayB)
         {
-            int i = buffer.Length;
-            Array.Resize<byte>(ref buffer, i + bytes.Length + 4);
-
-            byte[] lengthBytes = BitConverter.GetBytes(bytes.Length);
-            if (BitConverter.IsLittleEndian)
-                Array.Reverse(lengthBytes);
-
-            lengthBytes.CopyTo(buffer, i);
-            bytes.CopyTo(buffer, i + 4);
-
-            return 0;
+            byte[] outputBytes = new byte[arrayA.Length + arrayB.Length];
+            Buffer.BlockCopy(arrayA, 0, outputBytes, 0, arrayA.Length);
+            Buffer.BlockCopy(arrayB, 0, outputBytes, arrayA.Length, arrayB.Length);
+            return outputBytes;
         }
 
 
